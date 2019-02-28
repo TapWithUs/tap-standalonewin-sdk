@@ -88,9 +88,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="TAPWinUnityBridge.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TAPDataManager.cs" />
     <Compile Include="TAPDevice.cs" />
     <Compile Include="TAPGuids.cs" />
     <Compile Include="TAPInputMode.cs" />
