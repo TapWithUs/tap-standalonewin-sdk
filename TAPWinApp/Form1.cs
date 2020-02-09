@@ -73,5 +73,10 @@ namespace TAPWinApp
             });
             
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            TAPManager.Instance.Vibrate(new int[] { 100, 300, 100 });
+        }
     }
 }

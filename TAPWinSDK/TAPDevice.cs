@@ -14,24 +14,34 @@ namespace TAPWin
         {
             internal GattCharacteristic tapData;
             internal GattCharacteristic mouseData;
+            internal GattCharacteristic airGestures;
             internal GattCharacteristic nusRx;
+            internal GattCharacteristic nusTx;
+            internal GattCharacteristic uiCommands;
             internal int fwVersion;
-            public TAPProperties(GattCharacteristic tData, GattCharacteristic mData, GattCharacteristic nRx, int fw)
+            public TAPProperties(GattCharacteristic tData, GattCharacteristic mData, GattCharacteristic nRx, GattCharacteristic nTx, GattCharacteristic uiCmds, GattCharacteristic airGest, int fw)
             {
                 tapData = tData;
                 mouseData = mData;
                 nusRx = nRx;
                 fwVersion = fw;
+                uiCommands = uiCmds;
+                airGestures = airGest;
+                nusTx = nTx;
             }
         }
         
         private BluetoothLEDevice device;
         private GattCharacteristic rx;
+        private GattCharacteristic tx;
         private GattCharacteristic tapData;
         private GattCharacteristic mouseData;
+        private GattCharacteristic airGesturesData;
+        private GattCharacteristic uiCommands;
 
         bool tapDataValueChangedAssigned;
         bool mouseDataValueChangedAssigned;
+        bool nusTxValueChangedAssigned;
 
         private bool isReady;
         private int fw;
@@ -54,6 +64,7 @@ namespace TAPWin
         internal event Action<TAPDevice, bool> OnTapReady;
         internal event Action<string,int> OnTapped;
         internal event Action<string,int,int, bool> OnMoused;
+
         public bool IsConnected
         {
             get
@@ -124,6 +135,7 @@ namespace TAPWin
             this.supportsMouse = false;
             this.tapDataValueChangedAssigned = false;
             this.mouseDataValueChangedAssigned = false;
+            this.nusTxValueChangedAssigned = false;
         }
 
         public bool Equals(TAPDevice other)
@@ -189,6 +201,19 @@ namespace TAPWin
                         }
                     }
 
+                    if (this.tx != null)
+                    {
+                        GattCommunicationStatus statusTX = await this.tx.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Indicate);
+                        if (statusTX == GattCommunicationStatus.Success)
+                        {
+                            if (!this.nusTxValueChangedAssigned)
+                            {
+                                this.tx.ValueChanged += OnTXValueChanged;
+                                this.nusTxValueChangedAssigned = true;
+                            }
+                        }
+                    }
+                    
                     if (OnTapReady != null)
                     {
                         this.isReady = true;
@@ -261,6 +286,59 @@ namespace TAPWin
 
         }
 
+        void OnAirGesturesDataValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+        {
+
+        }
+
+        void OnTXValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+        {
+
+        }
+
+        internal async void RequestReadAirGesturesMode()
+        {
+            if (this.airGesturesData == null || !this.isReady || !this.IsConnected)
+            {
+                return;
+            }
+            byte[] data = new byte[20];
+            data[0] = 13;
+            for (int i=1; i<data.Length; i++)
+            {
+                data[i] = 0;
+            }
+            DataWriter writer = new DataWriter();
+            writer.WriteBytes(data);
+            GattCommunicationStatus result = await this.airGesturesData.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
+        }
+
+        internal async void Vibrate(int[] durations)
+        {
+            if (durations == null || this.uiCommands == null || !this.isReady || !this.IsConnected)
+            {
+                return;
+            }
+            byte[] data = new byte[20];
+            data[0] = 0;
+            data[1] = 2;
+            for (int i = 0; i < data.Length-2; i++)
+            {
+                if (i < durations.Length)
+                {
+                    data[i+2] = (byte)((double)durations[i] / (double)10.0);
+                } else
+                {
+                    data[i+2] = 0;
+                }
+
+            }
+            DataWriter writer = new DataWriter();
+            writer.WriteBytes(data);
+            
+            GattCommunicationStatus result = await this.uiCommands.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
+        }
+
         public String GetStringDescription()
         {
             return String.Format("{0} ({1})", this.Name, this.Identifier);
@@ -277,6 +355,7 @@ namespace TAPWin
                     tapData = properties.tapData;
                     rx = properties.nusRx;
                     mouseData = properties.mouseData;
+                    
                     fw = properties.fwVersion;
                 }
             }
@@ -328,6 +407,10 @@ namespace TAPWin
             GattCharacteristic tapData = null;
             GattCharacteristic tapMouse = null;
             GattCharacteristic nusRx = null;
+            GattCharacteristic nusTx = null;
+            GattCharacteristic airGestures = null;
+            GattCharacteristic uiCommands = null;
+
             int fwVersion = 0;
             
             GattDeviceServicesResult tapServicesResult = await GetServicesAsync(d, 10, 800);
@@ -336,12 +419,10 @@ namespace TAPWin
                 
                 if (ser.Uuid == TAPGuids.service_tap)
                 {
-
-            
                     GattCharacteristicsResult tapCharacteristicsResult = await GetCharacteristicsAsync(ser, 10, 800);
                     foreach (GattCharacteristic ch in tapCharacteristicsResult.Characteristics)
                     {
-                
+                        TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, String.Format("Found Characteristic {0} for Service {1}", TAPGuids.GetCharacteristicNameByGUID(ch.Uuid), TAPGuids.GetServiceNameByGUID(ser.Uuid)));
                         if (ch.Uuid == TAPGuids.characteristic_tapdata)
                         {
                             tapData = ch;
@@ -350,21 +431,32 @@ namespace TAPWin
                         {
                             tapMouse = ch;
                         }
+                        else if (ch.Uuid == TAPGuids.characteristic_airgesturesdata)
+                        {
+                            airGestures = ch;
+                        } else if (ch.Uuid == TAPGuids.characteristic_uicommands)
+                        {
+                            uiCommands = ch;
+                        }
 
                     }
                 }
 
                 if (ser.Uuid == TAPGuids.service_nus)
                 {
-
+                    
                     GattCharacteristicsResult nusCharacteristicsResult = await GetCharacteristicsAsync(ser, 10, 800);
                 
                     foreach (GattCharacteristic ch in nusCharacteristicsResult.Characteristics)
                     {
-                
+                        TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, String.Format("Found Characteristic {0} for Service {1}", TAPGuids.GetCharacteristicNameByGUID(ch.Uuid), TAPGuids.GetServiceNameByGUID(ser.Uuid)));
                         if (ch.Uuid == TAPGuids.characteristic_rx)
                         {
                             nusRx = ch;
+                        }
+                        else if (ch.Uuid == TAPGuids.characteristic_tx)
+                        {
+                            nusTx = ch;
                         }
                     }
 
@@ -372,11 +464,11 @@ namespace TAPWin
 
                 if (ser.Uuid == TAPGuids.service_device_information)
                 {
-                
+                    
                     GattCharacteristicsResult fwCharacteristicsResult = await GetCharacteristicsAsync(ser, 10, 800);
                     foreach (GattCharacteristic ch in fwCharacteristicsResult.Characteristics)
                     {
-                
+                        TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, String.Format("Found Characteristic {0} for Service {1}", TAPGuids.GetCharacteristicNameByGUID(ch.Uuid), TAPGuids.GetServiceNameByGUID(ser.Uuid)));
                         if (ch.Uuid == TAPGuids.characteristic_fw_version)
                         {
                             GattReadResult fwRead = await ch.ReadValueAsync();
@@ -393,7 +485,7 @@ namespace TAPWin
                 }
             }
 
-            return new TAPProperties(tapData, tapMouse, nusRx, fwVersion);
+            return new TAPProperties(tapData, tapMouse, nusRx, nusTx, uiCommands, airGestures, fwVersion);
         }
 
         public static async Task<TAPDevice> FromBluetoothLEDeviceAsync(BluetoothLEDevice d, TAPInputMode inputMode)
@@ -408,6 +500,9 @@ namespace TAPWin
                 t.rx = properties.nusRx;
                 t.mouseData = properties.mouseData;
                 t.fw = properties.fwVersion;
+                t.airGesturesData = properties.airGestures;
+                t.uiCommands = properties.uiCommands;
+                t.tx = properties.nusTx;
                 return t;
             }
 

@@ -290,6 +290,8 @@ namespace TAPWin
             
         }
 
+        
+
         private async void dw_added(DeviceWatcher sender, DeviceInformation deviceInfo)
         {
 
@@ -340,47 +342,91 @@ namespace TAPWin
             
         }
 
+        private void performTapAction(Action<TAPDevice> action, string identifier = "")
+        {
+            if (!identifier.Equals(""))
+            {
+                TAPDevice tap;
+                if (this.taps.TryGetValue(identifier, out tap))
+                {
+                    action(tap);
+
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, TAPDevice> kv in this.taps)
+                {
+                    TAPDevice tap = kv.Value;
+                    action(tap);
+                }
+            }
+        }
+
+        public void Vibrate(int[] durations, string identifier = "")
+        {
+            this.performTapAction((tap) =>
+            {
+                tap.Vibrate(durations);
+            });
+        }
+
         public void SetTapInputMode(TAPInputMode newInputMode, string identifier = "")
         {
             if (newInputMode == TAPInputMode.Null)
             {
                 return;
             }
-
-            if (identifier != "")
-            {
-                TAPDevice tap;
-                if (this.taps.TryGetValue(identifier, out tap))
-                {
-                    tap.InputMode = newInputMode;
-                    if (this.activated)
-                    {
-                        tap.sendMode();
-                    }
-                    else
-                    {
-                        tap.sendMode(this.inputModeWhenDeactivated);
-                    }
-
-                }
-            }
-            else
+            if (identifier.Equals(""))
             {
                 this.defaultInputMode = newInputMode;
-                foreach (KeyValuePair<string, TAPDevice> kv in this.taps)
-                {
-                    TAPDevice tap = kv.Value;
-                    tap.InputMode = newInputMode;
-                    if (this.activated)
-                    {
-                        tap.sendMode();
-                    }
-                    else
-                    {
-                        tap.sendMode(this.inputModeWhenDeactivated);
-                    }
-                }
             }
+            this.performTapAction((tap) =>
+            {
+                tap.InputMode = newInputMode;
+                if (this.activated)
+                {
+                    tap.sendMode();
+                } else
+                {
+                    tap.sendMode(this.inputModeWhenDeactivated);
+                }
+            });
+
+            //if (identifier != "")
+            //{
+            //    TAPDevice tap;
+            //    if (this.taps.TryGetValue(identifier, out tap))
+            //    {
+            //        tap.InputMode = newInputMode;
+            //        if (this.activated)
+            //        {
+            //            tap.sendMode();
+            //        }
+            //        else
+            //        {
+            //            tap.sendMode(this.inputModeWhenDeactivated);
+            //        }
+
+            //    }
+            //}
+            //else
+            //{
+            //    this.defaultInputMode = newInputMode;
+            //    foreach (KeyValuePair<string, TAPDevice> kv in this.taps)
+            //    {
+            //        TAPDevice tap = kv.Value;
+            //        tap.InputMode = newInputMode;
+            //        if (this.activated)
+            //        {
+            //            tap.sendMode();
+            //        }
+            //        else
+            //        {
+            //            tap.sendMode(this.inputModeWhenDeactivated);
+            //        }
+            //    }
+            //}
 
         }
 
