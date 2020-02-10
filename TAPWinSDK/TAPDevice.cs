@@ -42,6 +42,7 @@ namespace TAPWin
         bool tapDataValueChangedAssigned;
         bool mouseDataValueChangedAssigned;
         bool nusTxValueChangedAssigned;
+        bool airGestureDataValueChangedAssigned;
 
         private bool isReady;
         private int fw;
@@ -64,6 +65,8 @@ namespace TAPWin
         internal event Action<TAPDevice, bool> OnTapReady;
         internal event Action<string,int> OnTapped;
         internal event Action<string,int,int, bool> OnMoused;
+        internal event Action<string, bool> OnTapChangedAirGesturesState;
+        internal event Action<string, TAPAirGesture> OnAirGestured;
 
         public bool IsConnected
         {
@@ -116,6 +119,8 @@ namespace TAPWin
             }
         }
 
+        private bool isInAirGestureState;
+
         //internal void Finalize()
         //{
         //    Debug.WriteLine("DESTRUCATOR");
@@ -136,6 +141,8 @@ namespace TAPWin
             this.tapDataValueChangedAssigned = false;
             this.mouseDataValueChangedAssigned = false;
             this.nusTxValueChangedAssigned = false;
+            this.airGestureDataValueChangedAssigned = false;
+            this.isInAirGestureState = false;
         }
 
         public bool Equals(TAPDevice other)
@@ -153,7 +160,7 @@ namespace TAPWin
             return bleDevice.DeviceId;
         }
 
-        internal void SetEventActions(Action<string, int> tapDataAction, Action<string,int,int,bool> mouseDataAction)
+        internal void SetEventActions(Action<string, int> tapDataAction, Action<string,int,int,bool> mouseDataAction, Action<String,bool> airGesturesStateAction, Action<string,TAPAirGesture> airGestureDataAction)
         {
             if (this.OnTapped == null)
             {
@@ -162,6 +169,14 @@ namespace TAPWin
             if (this.OnMoused == null)
             {
                 this.OnMoused += mouseDataAction;
+            }
+            if (this.OnTapChangedAirGesturesState == null)
+            {
+                this.OnTapChangedAirGesturesState += airGesturesStateAction;
+            }
+            if (this.OnAirGestured == null)
+            {
+                this.OnAirGestured += airGestureDataAction;
             }
         }
 
@@ -203,13 +218,27 @@ namespace TAPWin
 
                     if (this.tx != null)
                     {
-                        GattCommunicationStatus statusTX = await this.tx.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Indicate);
+                        GattCommunicationStatus statusTX = await this.tx.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Notify);
                         if (statusTX == GattCommunicationStatus.Success)
                         {
                             if (!this.nusTxValueChangedAssigned)
                             {
                                 this.tx.ValueChanged += OnTXValueChanged;
                                 this.nusTxValueChangedAssigned = true;
+                            }
+                        }
+                    }
+
+                    if (this.airGesturesData != null)
+                    {
+                        GattCommunicationStatus statusAirGesture = await this.airGesturesData.WriteClientCharacteristicConfigurationDescriptorAsync(GattClientCharacteristicConfigurationDescriptorValue.Notify);
+                        if (statusAirGesture == GattCommunicationStatus.Success)
+                        {
+                            if (!this.airGestureDataValueChangedAssigned)
+                            {
+                                this.airGesturesData.ValueChanged += OnAirGesturesDataValueChanged;
+                                this.airGestureDataValueChangedAssigned = true;
+                                this.RequestReadAirGesturesMode();
                             }
                         }
                     }
@@ -274,21 +303,63 @@ namespace TAPWin
 
         void OnTapDataValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
         {
-            if (this.OnTapped != null)
+            if (this.isInAirGestureState)
             {
-                byte[] value = new byte[args.CharacteristicValue.Length];
-                DataReader reader = DataReader.FromBuffer(args.CharacteristicValue);
-                reader.ReadBytes(value);
-                Debug.WriteLine("TAPPED " + value[0]);
-                this.OnTapped(this.Identifier, value[0]);
-                
+                if (this.OnAirGestured != null)
+                {
+                    byte[] value = new byte[args.CharacteristicValue.Length];
+                    DataReader reader = DataReader.FromBuffer(args.CharacteristicValue);
+                    reader.ReadBytes(value);
+                    TAPAirGesture airGesture = TAPAirGestureHelper.tapToAirGesture(value[0]);
+                    if (airGesture != TAPAirGesture.Undefined)
+                    {
+                        this.OnAirGestured(this.Identifier, airGesture);
+                    }
+                }
             }
+            else
+            {
+                if (this.OnTapped != null)
+                {
+                    byte[] value = new byte[args.CharacteristicValue.Length];
+                    DataReader reader = DataReader.FromBuffer(args.CharacteristicValue);
+                    reader.ReadBytes(value);
+                    Debug.WriteLine("TAPPED " + value[0]);
+                    this.OnTapped(this.Identifier, value[0]);
+
+                }
+            }
+            
 
         }
 
         void OnAirGesturesDataValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
         {
 
+            byte[] value = new byte[args.CharacteristicValue.Length];
+            DataReader reader = DataReader.FromBuffer(args.CharacteristicValue);
+            reader.ReadBytes(value);
+            if (value.Length > 0)
+            {
+                byte first = value[0];
+                if (first != 20)
+                {
+                    // Air Gestured
+                    TAPAirGesture airGesture = TAPAirGestureHelper.intToAirGesture(first);
+                    if (this.OnAirGestured != null && airGesture != TAPAirGesture.Undefined)
+                    {
+                        this.OnAirGestured(this.Identifier, airGesture);
+                    } 
+                } else if (value.Length > 1)
+                {
+                    // State
+                    this.isInAirGestureState = value[1] == 1;
+                    if (this.OnTapChangedAirGesturesState != null)
+                    {
+                        this.OnTapChangedAirGesturesState(this.Identifier, value[1] == 1);
+                    }
+                }
+            }
         }
 
         void OnTXValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
@@ -298,7 +369,7 @@ namespace TAPWin
 
         internal async void RequestReadAirGesturesMode()
         {
-            if (this.airGesturesData == null || !this.isReady || !this.IsConnected)
+            if (this.airGesturesData == null || !this.IsConnected)
             {
                 return;
             }

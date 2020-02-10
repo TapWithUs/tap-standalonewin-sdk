@@ -34,6 +34,8 @@ namespace TAPWinApp
                 TAPManager.Instance.OnTapped += this.OnTapped;
                 TAPManager.Instance.OnTapConnected += this.OnTapConnected;
                 TAPManager.Instance.OnTapDisconnected += this.OnTapDisconnected;
+                TAPManager.Instance.OnAirGestured += this.OnAirGestured;
+                TAPManager.Instance.OnChangedAirGestureState += this.OnChangedAirGestureState;
                 TAPManager.Instance.Start();
             }
             
@@ -77,6 +79,16 @@ namespace TAPWinApp
         private void button1_Click(object sender, EventArgs e)
         {
             TAPManager.Instance.Vibrate(new int[] { 100, 300, 100 });
+        }
+
+        private void OnAirGestured(string identifier, TAPAirGesture airGesture)
+        {
+            Console.WriteLine("AirGestured " + identifier + ", code: " + (int)airGesture);
+        }
+
+        private void OnChangedAirGestureState(string identifier, bool isInAirGestureState)
+        {
+            Console.WriteLine("Changed AirGesture State " + identifier + "isInAirGestureState: " + isInAirGestureState.ToString());
         }
     }
 }

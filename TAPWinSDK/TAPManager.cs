@@ -37,7 +37,9 @@ namespace TAPWin
         public event Action<string> OnTapDisconnected;
         public event Action<string, int> OnTapped;
         public event Action<string, int, int,bool> OnMoused;
-        
+        public event Action<string, bool> OnChangedAirGestureState;
+        public event Action<string, TAPAirGesture> OnAirGestured;
+
         private Dictionary<string, TAPDevice> taps;
         private HashSet<string> pending;
 
@@ -234,7 +236,7 @@ namespace TAPWin
             {
                 TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, "TAP is Ready:" + tap.GetStringDescription());
                 tap.sendMode();
-                tap.SetEventActions(this.OnTapTapped, this.OnTapMoused);
+                tap.SetEventActions(this.OnTapTapped, this.OnTapMoused, this.OnTapChangedAirGestureState, this.OnTapAirGestured);
                 
                 
                 if (this.OnTapConnected != null)
@@ -276,6 +278,30 @@ namespace TAPWin
             {
 
                 this.OnTapped(identifier, tapCode);
+            }
+        }
+
+        private void OnTapChangedAirGestureState(string identifier, bool isInAirGestureState)
+        {
+            if (!this.activated)
+            {
+                return;
+            }
+            if (this.OnChangedAirGestureState != null)
+            {
+                this.OnChangedAirGestureState(identifier, isInAirGestureState);
+            }
+        }
+
+        private void OnTapAirGestured(string identifier, TAPAirGesture airGesture)
+        {
+            if (!this.activated)
+            {
+                return;
+            }
+            if (this.OnAirGestured != null)
+            {
+                this.OnAirGestured(identifier, airGesture);
             }
         }
 
