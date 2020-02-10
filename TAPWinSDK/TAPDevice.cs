@@ -58,7 +58,6 @@ namespace TAPWin
             set
             {
                 _inputMode = value;
-
             }
         }
 
@@ -254,33 +253,39 @@ namespace TAPWin
             OnTapReady(this, false);
         }
 
-        public async void sendMode(TAPInputMode overrideMode = TAPInputMode.Null)
+        public async void sendMode(TAPInputMode overrideMode = null)
         {
-            
-            TAPInputMode mode = overrideMode == TAPInputMode.Null ? this.InputMode : overrideMode;
-            if (mode != TAPInputMode.Null)
+            if (this.isReady && this.IsConnected)
             {
-                if (this.isReady && this.IsConnected)
+                TAPInputMode mode = overrideMode == null ? this.InputMode : overrideMode;
+                mode = mode.makeCompatibleWithFWVersion(this.fw);
+                if (mode.isValid)
                 {
-                    if (mode != TAPInputMode.Null)
-                    {
+                    byte[] data = mode.getBytes();
+                    DataWriter writer = new DataWriter();
+                    writer.WriteBytes(data);
+                    GattCommunicationStatus result = await rx.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
 
-                        if (mode == TAPInputMode.Controller_With_MouseHID && this.fw < 010615) {
-                            Debug.WriteLine("NOT SUPPORTED");
-                            mode = TAPInputMode.Controller;
-                        }
+                        
 
-                        DataWriter writer = new DataWriter();
+                        //if (mode != TAPInputMode.Null)
+                        //{
 
-                        byte[] data = { 0x3, 0xc, 0x0, (byte)mode };
-                        writer.WriteBytes(data);
-                        TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, String.Format("TAP {0} ({1}) Sent mode ({2})", this.Name, this.Identifier, mode.ToString()));
-                        GattCommunicationStatus result = await rx.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
-                    }
+                        //    if (mode == TAPInputMode.Controller_With_MouseHID && this.fw < 010615) {
+                        //        Debug.WriteLine("NOT SUPPORTED");
+                        //        mode = TAPInputMode.Controller;
+                        //    }
+
+                        //    DataWriter writer = new DataWriter();
+
+                        //    byte[] data = { 0x3, 0xc, 0x0, (byte)mode };
+                        //    writer.WriteBytes(data);
+                        //    TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, String.Format("TAP {0} ({1}) Sent mode ({2})", this.Name, this.Identifier, mode.ToString()));
+                        //    GattCommunicationStatus result = await rx.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);
+                        //}
+                    
                 }
             }
-
-
         }
 
         void onTapMouseValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)

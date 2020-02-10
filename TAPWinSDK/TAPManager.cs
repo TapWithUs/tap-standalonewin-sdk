@@ -56,8 +56,8 @@ namespace TAPWin
         {
             
             this.activated = false;
-            this.defaultInputMode = TAPInputMode.Controller_With_MouseHID;
-            this.inputModeWhenDeactivated = TAPInputMode.Text;
+            this.defaultInputMode = TAPInputMode.Controller();
+            this.inputModeWhenDeactivated = TAPInputMode.Text();
             this.started = false;
             this.taps = new Dictionary<string, TAPDevice>();
             this.pending = new HashSet<string>();
@@ -397,15 +397,31 @@ namespace TAPWin
             });
         }
 
+        public void setDefaultInputMode(TAPInputMode newDefaultInputMode, bool applyToCurrentTaps)
+        {
+            this.defaultInputMode = newDefaultInputMode;
+            if (applyToCurrentTaps)
+            {
+                this.performTapAction((tap) =>
+                {
+                    tap.InputMode = newDefaultInputMode;
+                    if (this.activated)
+                    {
+                        tap.sendMode();
+                    }
+                    else
+                    {
+                        tap.sendMode(this.inputModeWhenDeactivated);
+                    }
+                });
+            }
+        }
+
         public void SetTapInputMode(TAPInputMode newInputMode, string identifier = "")
         {
-            if (newInputMode == TAPInputMode.Null)
+            if (!newInputMode.isValid)
             {
                 return;
-            }
-            if (identifier.Equals(""))
-            {
-                this.defaultInputMode = newInputMode;
             }
             this.performTapAction((tap) =>
             {
@@ -419,40 +435,7 @@ namespace TAPWin
                 }
             });
 
-            //if (identifier != "")
-            //{
-            //    TAPDevice tap;
-            //    if (this.taps.TryGetValue(identifier, out tap))
-            //    {
-            //        tap.InputMode = newInputMode;
-            //        if (this.activated)
-            //        {
-            //            tap.sendMode();
-            //        }
-            //        else
-            //        {
-            //            tap.sendMode(this.inputModeWhenDeactivated);
-            //        }
-
-            //    }
-            //}
-            //else
-            //{
-            //    this.defaultInputMode = newInputMode;
-            //    foreach (KeyValuePair<string, TAPDevice> kv in this.taps)
-            //    {
-            //        TAPDevice tap = kv.Value;
-            //        tap.InputMode = newInputMode;
-            //        if (this.activated)
-            //        {
-            //            tap.sendMode();
-            //        }
-            //        else
-            //        {
-            //            tap.sendMode(this.inputModeWhenDeactivated);
-            //        }
-            //    }
-            //}
+            
 
         }
 

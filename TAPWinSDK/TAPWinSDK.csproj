@@ -89,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RawSensorSensitivity.cs" />
     <Compile Include="TAPAirGesture.cs" />
     <Compile Include="TAPDevice.cs" />
     <Compile Include="TAPGuids.cs" />
