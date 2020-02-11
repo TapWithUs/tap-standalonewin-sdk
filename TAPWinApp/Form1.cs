@@ -36,6 +36,8 @@ namespace TAPWinApp
                 TAPManager.Instance.OnTapDisconnected += this.OnTapDisconnected;
                 TAPManager.Instance.OnAirGestured += this.OnAirGestured;
                 TAPManager.Instance.OnChangedAirGestureState += this.OnChangedAirGestureState;
+                TAPManager.Instance.OnRawSensorDataReceieved += this.OnRawSensorDataReceieved;
+                TAPManager.Instance.setDefaultInputMode(TAPInputMode.RawSensor(new RawSensorSensitivity()), true);
                 TAPManager.Instance.Start();
             }
             
@@ -89,6 +91,15 @@ namespace TAPWinApp
         private void OnChangedAirGestureState(string identifier, bool isInAirGestureState)
         {
             Console.WriteLine("Changed AirGesture State " + identifier + "isInAirGestureState: " + isInAirGestureState.ToString());
+        }
+
+        private void OnRawSensorDataReceieved(string identifier, RawSensorData rsData)
+        {
+            if (rsData.type == RawSensorDataType.Device)
+            {
+                Console.WriteLine(rsData.ToString());
+            }
+            
         }
     }
 }

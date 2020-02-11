@@ -26,7 +26,7 @@ namespace TAPWin
         public static readonly string kIMUGyro = "IMUGyro";
         public static readonly string kIMUAccelerometer = "IMUAccelerometer";
 
-        private Dictionary<string,byte> parameters;
+        private Dictionary<string,byte> parameters= new Dictionary<string, byte>();
 
         private static readonly Dictionary<string, double[]> factors = new Dictionary<string, double[]>()
         {
@@ -93,14 +93,14 @@ namespace TAPWin
             }
         }
 
-        RawSensorSensitivity()
+        public RawSensorSensitivity()
         {
             this.deviceAccelerometer = 0;
             this.imuGyro = 0;
             this.imuAccelerometer = 0;
         }
 
-        RawSensorSensitivity(byte _deviceAccelerometer, byte _imuGyro, byte _imuAccelerometer)
+        public RawSensorSensitivity(byte _deviceAccelerometer, byte _imuGyro, byte _imuAccelerometer)
         {
             this.deviceAccelerometer = _deviceAccelerometer;
             this.imuGyro = _imuGyro;

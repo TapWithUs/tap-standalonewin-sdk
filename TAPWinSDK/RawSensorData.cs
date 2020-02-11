@@ -28,7 +28,12 @@ namespace TAPWin
             Int16 i_x = (Int16)((int)bytes[1] << 8 | (int)bytes[0]);
             Int16 i_y = (Int16)((int)bytes[3] << 8 | (int)bytes[2]);
             Int16 i_z = (Int16)((int)bytes[5] << 8 | (int)bytes[4]);
-            return new Point3((double)i_x, (double)i_y, (double)i_z);
+            return new Point3((double)i_x * sensitivityFactor, (double)i_y * sensitivityFactor, (double)i_z * sensitivityFactor);
+        }
+
+        public override string ToString()
+        {
+            return String.Format("( {0:0.00}, {1:0.00}, {2:0.00} )", this.x, this.y, this.z);
         }
     }
 
@@ -61,7 +66,7 @@ namespace TAPWin
             this.points = _points;
         }
 
-        public Point3 Get(int index)
+        public Point3 GetPoint(int index)
         {
             if (this.points == null)
             {
@@ -74,6 +79,20 @@ namespace TAPWin
             {
                 return null;
             }
+        }
+
+        public override string ToString()
+        {
+            if (this.type == RawSensorDataType.None) {
+                return "Unknown Type";
+            }
+            string typeString = this.type == RawSensorDataType.Device ? "Device" : "IMU";
+            string pointsString = "";
+            for (int i=0; i<this.points.Length; i++)
+            {
+                pointsString = pointsString + " " + this.points[i].ToString();
+            }
+            return String.Format("Timestamp: {0}, Type: {1}, Points: {2}", this.timestamp.ToString(), typeString, pointsString);
         }
 
         public static RawSensorData Create(RawSensorDataType _type, UInt32 _timestamp, byte[] dataArray, RawSensorSensitivity sensitivitiy)
@@ -89,7 +108,7 @@ namespace TAPWin
             
             while (pointsDataOffset  < dataArray.Length)
             {
-                if (pointsDataOffset + pointsDataLength < dataArray.Length)
+                if (pointsDataOffset + pointsDataLength-1 < dataArray.Length)
                 {
                     double sens = sensitivitiy.getSensitivity(pointSensitivity);
                     Point3 point = Point3.Create(dataArray.Skip(pointsDataOffset).Take(pointsDataLength).ToArray(), sens);

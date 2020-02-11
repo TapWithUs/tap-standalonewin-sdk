@@ -18,7 +18,7 @@ namespace TAPWin
             {
                 UInt32 meta = 0;
                 int add = 0;
-                meta = BitConverter.ToUInt32(data, 0);
+                meta = BitConverter.ToUInt32(data, metaOffset);
                 int messageOffset = 0;
                 int messageLength = 0;
                 if (meta > 0)

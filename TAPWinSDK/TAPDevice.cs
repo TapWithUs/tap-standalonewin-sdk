@@ -182,7 +182,7 @@ namespace TAPWin
             {
                 this.OnAirGestured += airGestureDataAction;
             }
-            if (this.OnRawSensorDataReceieved != null)
+            if (this.OnRawSensorDataReceieved == null)
             {
                 this.OnRawSensorDataReceieved += onRawSensorDataReceievedAction;
             }
