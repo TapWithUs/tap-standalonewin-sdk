@@ -66,6 +66,7 @@ namespace TAPWin
         internal event Action<string,int,int, bool> OnMoused;
         internal event Action<string, bool> OnTapChangedAirGesturesState;
         internal event Action<string, TAPAirGesture> OnAirGestured;
+        internal event Action<string, RawSensorData> OnRawSensorDataReceieved;
 
         public bool IsConnected
         {
@@ -159,7 +160,11 @@ namespace TAPWin
             return bleDevice.DeviceId;
         }
 
-        internal void SetEventActions(Action<string, int> tapDataAction, Action<string,int,int,bool> mouseDataAction, Action<String,bool> airGesturesStateAction, Action<string,TAPAirGesture> airGestureDataAction)
+        internal void SetEventActions(Action<string, int> tapDataAction, 
+            Action<string,int,int,bool> mouseDataAction, 
+            Action<String,bool> airGesturesStateAction, 
+            Action<string,TAPAirGesture> airGestureDataAction,
+            Action<string,RawSensorData> onRawSensorDataReceievedAction)
         {
             if (this.OnTapped == null)
             {
@@ -176,6 +181,10 @@ namespace TAPWin
             if (this.OnAirGestured == null)
             {
                 this.OnAirGestured += airGestureDataAction;
+            }
+            if (this.OnRawSensorDataReceieved != null)
+            {
+                this.OnRawSensorDataReceieved += onRawSensorDataReceievedAction;
             }
         }
 
@@ -369,7 +378,19 @@ namespace TAPWin
 
         void OnTXValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
         {
-
+            if (this.InputMode.isModeEquals(TAPInputMode.kRawSensor)  && this.InputMode.isValid)
+            {
+                byte[] value = new byte[args.CharacteristicValue.Length];
+                DataReader reader = DataReader.FromBuffer(args.CharacteristicValue);
+                reader.ReadBytes(value);
+                RawSensorDataParser.ParseWhole(value, this.InputMode.sensitivity, ((rsData) =>
+                {
+                    if (this.OnRawSensorDataReceieved != null)
+                    {
+                        this.OnRawSensorDataReceieved(this.Identifier, rsData);
+                    }
+                }));
+            }
         }
 
         internal async void RequestReadAirGesturesMode()

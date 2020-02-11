@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TAPWin
 {
@@ -49,29 +50,82 @@ namespace TAPWin
         public static int indexof_DEV_PINKY = 4;
 
         public readonly UInt32 timestamp;
-        public readonly RawSensorData type;
+        public readonly RawSensorDataType type;
         public readonly Point3[] points;
 
-        public RawSensorData Create(RawSensorDataType _type, UInt32 _timestamp, byte[] dataArray, RawSensorSensitivity sensitivitiy)
+
+        private RawSensorData(RawSensorDataType _type, UInt32 _timestamp, Point3[] _points)
         {
+            this.timestamp = _timestamp;
+            this.type = _type;
+            this.points = _points;
+        }
+
+        public Point3 Get(int index)
+        {
+            if (this.points == null)
+            {
+                return null;
+            }
+            if (index >= 0 && index < this.points.Length)
+            {
+                return this.points[index];
+            } else
+            {
+                return null;
+            }
+        }
+
+        public static RawSensorData Create(RawSensorDataType _type, UInt32 _timestamp, byte[] dataArray, RawSensorSensitivity sensitivitiy)
+        {
+            if (_type == RawSensorDataType.None)
+            {
+                return null;
+            }
             List<Point3> pointsInProcess = new List<Point3>();
             string pointSensitivity = _type == RawSensorDataType.Device ? RawSensorSensitivity.kDeviceAccelerometer : RawSensorSensitivity.kIMUGyro;
             int pointsDataOffset = 0;
             int pointsDataLength = 6;
+            
             while (pointsDataOffset  < dataArray.Length)
             {
                 if (pointsDataOffset + pointsDataLength < dataArray.Length)
                 {
                     double sens = sensitivitiy.getSensitivity(pointSensitivity);
-                    Point3 point = new Point3.cre
+                    Point3 point = Point3.Create(dataArray.Skip(pointsDataOffset).Take(pointsDataLength).ToArray(), sens);
+                    if (point != null)
+                    {
+                        pointsInProcess.Add(point);
+                    } else
+                    {
+                        return null;
+                    }
+                    pointsDataOffset += pointsDataLength;
+                    if (_type == RawSensorDataType.IMU)
+                    {
+                        pointSensitivity = RawSensorSensitivity.kIMUAccelerometer;
+                    }
                 } else
                 {
                     return null;
                 }
             }
 
-            
+            if (_type == RawSensorDataType.IMU)
+            {
+                if (pointsInProcess.Count != 2)
+                {
+                    return null;
+                }
+            } else if (_type == RawSensorDataType.Device)
+            {
+                if (pointsInProcess.Count != 5)
+                {
+                    return null;
+                }
+            }
 
+            return new RawSensorData(_type, _timestamp, pointsInProcess.ToArray());
         }
 
     }

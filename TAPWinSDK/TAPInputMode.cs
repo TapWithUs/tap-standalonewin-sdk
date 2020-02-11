@@ -5,10 +5,10 @@ namespace TAPWin
 
     public class TAPInputMode
     {
-        internal static readonly string kController = "Controller";
-        internal static readonly string kControllerWithMouseHID = "ControllWithMouseHID";
-        internal static readonly string kText = "Text";
-        internal static readonly string kRawSensor = "RawSensor";
+        public static readonly string kController = "Controller";
+        public static readonly string kControllerWithMouseHID = "ControllWithMouseHID";
+        public static readonly string kText = "Text";
+        public static readonly string kRawSensor = "RawSensor";
 
         private static Dictionary<string, byte> modesByte = new Dictionary<string, byte>()
         {
@@ -107,6 +107,11 @@ namespace TAPWin
         public static TAPInputMode ControllerWithMouseHID()
         {
             return new TAPInputMode(TAPInputMode.kControllerWithMouseHID);
+        }
+
+        public bool isModeEquals(string _mode)
+        {
+            return this.mode.Equals(_mode);
         }
     }
 

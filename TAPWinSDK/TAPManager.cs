@@ -39,6 +39,7 @@ namespace TAPWin
         public event Action<string, int, int,bool> OnMoused;
         public event Action<string, bool> OnChangedAirGestureState;
         public event Action<string, TAPAirGesture> OnAirGestured;
+        public event Action<string, RawSensorData> OnRawSensorDataReceieved;
 
         private Dictionary<string, TAPDevice> taps;
         private HashSet<string> pending;
@@ -236,7 +237,7 @@ namespace TAPWin
             {
                 TAPManagerLog.Instance.Log(TAPManagerLogEvent.Info, "TAP is Ready:" + tap.GetStringDescription());
                 tap.sendMode();
-                tap.SetEventActions(this.OnTapTapped, this.OnTapMoused, this.OnTapChangedAirGestureState, this.OnTapAirGestured);
+                tap.SetEventActions(this.OnTapTapped, this.OnTapMoused, this.OnTapChangedAirGestureState, this.OnTapAirGestured, this.OnTapRawSensorDataReceived);
                 
                 
                 if (this.OnTapConnected != null)
@@ -305,6 +306,19 @@ namespace TAPWin
             }
         }
 
+        private void OnTapRawSensorDataReceived(string identifier, RawSensorData data)
+        {
+            if (!this.activated)
+            {
+                return;
+            }
+            if (this.OnRawSensorDataReceieved != null)
+            {
+                this.OnRawSensorDataReceieved(identifier, data);
+            }
+
+        }
+
         public int GetPendingCount()
         {
             return this.pending.Count;
@@ -368,7 +382,7 @@ namespace TAPWin
             
         }
 
-        private void performTapAction(Action<TAPDevice> action, string identifier = "")
+        private void PerformTapAction(Action<TAPDevice> action, string identifier = "")
         {
             if (!identifier.Equals(""))
             {
@@ -391,7 +405,7 @@ namespace TAPWin
 
         public void Vibrate(int[] durations, string identifier = "")
         {
-            this.performTapAction((tap) =>
+            this.PerformTapAction((tap) =>
             {
                 tap.Vibrate(durations);
             });
@@ -402,7 +416,7 @@ namespace TAPWin
             this.defaultInputMode = newDefaultInputMode;
             if (applyToCurrentTaps)
             {
-                this.performTapAction((tap) =>
+                this.PerformTapAction((tap) =>
                 {
                     tap.InputMode = newDefaultInputMode;
                     if (this.activated)
@@ -423,7 +437,7 @@ namespace TAPWin
             {
                 return;
             }
-            this.performTapAction((tap) =>
+            this.PerformTapAction((tap) =>
             {
                 tap.InputMode = newInputMode;
                 if (this.activated)

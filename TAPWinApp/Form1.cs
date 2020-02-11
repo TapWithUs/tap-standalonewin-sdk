@@ -71,7 +71,7 @@ namespace TAPWinApp
             this.Invoke((MethodInvoker)delegate
             {
                 textBox1.AppendText(line + Environment.NewLine);
-
+               
             });
             
         }
