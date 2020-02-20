@@ -271,6 +271,7 @@ namespace TAPWin
                 if (mode.isValid)
                 {
                     byte[] data = mode.getBytes();
+                    Debug.WriteLine("[{0}]", string.Join(", ", data));
                     DataWriter writer = new DataWriter();
                     writer.WriteBytes(data);
                     GattCommunicationStatus result = await rx.WriteValueAsync(writer.DetachBuffer(), GattWriteOption.WriteWithoutResponse);

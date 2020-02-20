@@ -33,12 +33,16 @@ namespace TAPWinApp
                 TAPManager.Instance.OnMoused += this.OnMoused;
                 TAPManager.Instance.OnTapped += this.OnTapped;
                 TAPManager.Instance.OnTapConnected += this.OnTapConnected;
-                TAPManager.Instance.OnTapDisconnected += this.OnTapDisconnected;
+                TAPManager.Instance.OnTapDisconnected += this.OnTapDisconnected; 
+
                 TAPManager.Instance.OnAirGestured += this.OnAirGestured;
                 TAPManager.Instance.OnChangedAirGestureState += this.OnChangedAirGestureState;
                 TAPManager.Instance.OnRawSensorDataReceieved += this.OnRawSensorDataReceieved;
-                TAPManager.Instance.setDefaultInputMode(TAPInputMode.RawSensor(new RawSensorSensitivity()), true);
+
+
+                TAPManager.Instance.SetDefaultInputMode(TAPInputMode.Controller(), true);
                 TAPManager.Instance.Start();
+                
             }
             
             
@@ -95,11 +99,26 @@ namespace TAPWinApp
 
         private void OnRawSensorDataReceieved(string identifier, RawSensorData rsData)
         {
-            if (rsData.type == RawSensorDataType.Device)
+            // RawSensorData has a timestamp, type and an array of points(x,y,z)
+            if (rsData.type == RawSensorDataType.Device) {
+                Point3 thumb = rsData.GetPoint(RawSensorData.indexof_DEV_THUMB);
+                if (thumb != null)
+                {
+                    // thumb.x, thumb.y, thumb.z ...
+                }
+                // Etc.. use indexes: RawSensorData.indexof_DEV_THUMB, RawSensorData.indexof_DEV_INDEX, RawSensorData.indexof_DEV_MIDDLE, RawSensorData.indexof_DEV_RING, RawSensorData.indexof_DEV_PINKY
+            }
+            else if (rsData.type == RawSensorDataType.IMU)
             {
-                Console.WriteLine(rsData.ToString());
+                Point3 gyro = rsData.GetPoint(RawSensorData.indexof_IMU_GYRO);
+                if (gyro != null)
+                {
+                    // gyro.x, gyro.y, gyro.z ...
+                }
+                // Etc.. use indexes: RawSensorData.indexof_IMU_GYRO, RawSensorData.indexof_IMU_ACCELEROMETER
             }
             
+            // Please refer readme.md for more information
         }
     }
 }

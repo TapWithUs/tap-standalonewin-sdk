@@ -411,7 +411,7 @@ namespace TAPWin
             });
         }
 
-        public void setDefaultInputMode(TAPInputMode newDefaultInputMode, bool applyToCurrentTaps)
+        public void SetDefaultInputMode(TAPInputMode newDefaultInputMode, bool applyToCurrentTaps)
         {
             this.defaultInputMode = newDefaultInputMode;
             if (applyToCurrentTaps)

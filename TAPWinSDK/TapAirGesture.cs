@@ -17,8 +17,8 @@ namespace TAPWin
         TwoFingersLeft = 7,
         OneFingerRight = 8,
         TwoFingersRight = 9,
-        IndexToThumbTouch = 1000,
-        MiddleToThumbTouch = 1001
+        IndexToThumbTouch = 10,
+        MiddleToThumbTouch = 11
     }
 
     internal class TAPAirGestureHelper
