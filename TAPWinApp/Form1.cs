@@ -40,7 +40,7 @@ namespace TAPWinApp
                 TAPManager.Instance.OnRawSensorDataReceieved += this.OnRawSensorDataReceieved;
 
 
-                TAPManager.Instance.SetDefaultInputMode(TAPInputMode.Controller(), true);
+                TAPManager.Instance.SetDefaultInputMode(TAPInputMode.Text(), true);
                 TAPManager.Instance.Start();
                 
             }
