@@ -140,6 +140,8 @@ void OnRawSensorDataReceieved(string identifier, RawSensorData rsData)
         }
 ```
 
+[For more information about raw sensor mode click here](https://tapwithus.atlassian.net/wiki/spaces/TD/pages/792002574/Tap+Strap+Raw+Sensors+Mode)
+
 ## Start TAP Manager
 
 After you've done registering to the desired events, you need to call the "Start" function.
